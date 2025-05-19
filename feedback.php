@@ -1,4 +1,54 @@
-<!DOCTYPE html>
+ <?php
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "health";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Kết nối thất bại: " . $conn->connect_error);
+}
+
+$feedbacks = [];
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $patientID = $_POST['patientID'] ?? null;
+    $nurseID = $_POST['nurseID'] ?? null;
+    $rating = $_POST['rating'] ?? null;
+    $comments = $_POST['feedbackDetails'] ?? null;
+    $feedbackDate = date("Y-m-d H:i:s");
+
+    if ($patientID && $nurseID && $rating && $comments) {
+        // Thêm feedback mới
+        $sql = "INSERT INTO feedback (PatientID, NurseID, FeedbackDate, Rating, Comments, IsAddressed)
+                VALUES (?, ?, ?, ?, ?, 0)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("iisis", $patientID, $nurseID, $feedbackDate, $rating, $comments);
+
+        if ($stmt->execute()) {
+            echo "<script>alert('Feedback submitted successfully');</script>";
+        } else {
+            echo "<script>alert('Lỗi khi thêm dữ liệu: " . $stmt->error . "');</script>";
+        }
+        $stmt->close();
+    }
+}
+
+    // ✅ Truy vấn tất cả feedback để hiển thị
+$feedbacks = [];
+$feedback_sql = "SELECT PatientID, NurseID, FeedbackDate, Rating, Comments FROM feedback ORDER BY FeedbackDate DESC";
+$result = $conn->query($feedback_sql);
+
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $feedbacks[] = $row;
+    }
+}
+?>
+
+ 
+ 
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -105,34 +155,44 @@
 </head>
 <body>
   <div class="sidebar">
-    <h2><img src="healthcare.png" width=40 height=40> Hospital's Name</img></h2>
+    <h3><img src="healthcare.png" width=40 height=40> Hospital's Name</img></h3>
     <a href="homepagenurse.php">Dashboard</a>
     <a href="patientinfo.php">Patient Information</a>
-    <a href="#">Medical Procedures</a>
+    <a href="medical_procedures.php">Medical Procedures</a>
     <a href="feedback.php">Provide Feedback</a>
-    <a href="#">Settings</a>
-    <a href="#">More</a>
+
+
   </div>
 
-  <div class="main-wrapper">
+<body>
+ <div class="main-wrapper">
     <div class="main-content">
-      <h1>Share your feedback</h1>
 
-      <label for="feedbackType">Feedback type</label>
-      <select id="feedbackType">
-        <option value="">Select feedback type</option>
-        <option value="service">Service</option>
-        <option value="staff">Staff</option>
-        <option value="facility">Facility</option>
-      </select>
+    
+	<?php if (!empty($feedbacks)): ?>
+  <h2 style="margin-top: 50px;">Feedback List</h2>
+  <table border="1" cellpadding="10" cellspacing="0" style="width:100%; border-collapse: collapse; margin-top: 15px;">
+    <tr style="background-color: #f0f0f0;">
+      <th>Patient ID</th>
+      <th>Nurse ID</th>
+      <th>Feedback Date</th>
+      <th>Rating</th>
+      <th>Comments</th>
+    </tr>
+    <?php foreach ($feedbacks as $fb): ?>
+      <tr>
+        <td><?= $fb['PatientID'] ?></td>
+        <td><?= $fb['NurseID'] ?></td>
+        <td><?= $fb['FeedbackDate'] ?></td>
+        <td><?= $fb['Rating'] ?></td>
+        <td><?= htmlspecialchars($fb['Comments']) ?></td>
+      </tr>
+    <?php endforeach; ?>
+  </table>
+<?php else: ?>
+  <p style="margin-top: 40px;">No feedback has been submitted yet.</p>
+<?php endif; ?>
 
-      <label for="feedbackDetails">Feedback details</label>
-      <textarea id="feedbackDetails" placeholder="Describe your feedback..."></textarea>
-
-      <label class="file-label" for="fileUpload">Upload file (optional)</label>
-      <input type="file" id="fileUpload">
-
-      <button class="submit-btn">Submit</button>
     </div>
   </div>
 </body>
