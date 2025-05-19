@@ -1,11 +1,9 @@
 <?php
-// THÔNG TIN KẾT NỐI DATABASE
 $servername = "localhost";
 $username = "root";
-$password = ""; // sửa nếu có
-$dbname = "health"; // thay bằng tên database thực tế
+$password = ""; 
+$dbname = "health"; 
 
-// Kết nối database
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Kết nối thất bại: " . $conn->connect_error);
@@ -13,38 +11,16 @@ if ($conn->connect_error) {
 
 // Xử lý tìm kiếm
 $search = isset($_GET['search']) ? $_GET['search'] : '';
-$sql = "SELECT PatientID, FirstName, LastName, DateOfBirth, Gender, Address FROM PATIENT";
-if ($search) {
-    $sql .= " WHERE FirstName LIKE '%$search%' OR LastName LIKE '%$search%'";
+$sql = "SELECT * FROM patient";
+if (!empty($search)) {
+	$safeSearch = $conn->real_escape_string($search);
+    $sql .= " WHERE CAST(PatientID AS int) LIKE '%$safeSearch%' 
+              OR FirstName LIKE '%$search%' 
+              OR LastName LIKE '%$search%' 
+              OR PhoneNumber LIKE '%$search%' 
+              OR Address LIKE '%$search%'";
 }
 $result = $conn->query($sql);
-if ($result->num_rows > 0) {
-    $no = 1;
-    while($row = $result->fetch_assoc()) {
-        $age = date_diff(date_create($row["DateOfBirth"]), date_create('today'))->y;
-        
-    }
-} else {
-    echo "<tr><td colspan='7'>Không tìm thấy bệnh nhân</td></tr>";
-}
-// Xuất Excel nếu người dùng bấm nút
-if (isset($_GET['export']) && $_GET['export'] == "excel") {
-    header("Content-Type: application/vnd.ms-excel");
-    header("Content-Disposition: attachment; filename=patient_data.xls");
-
-    $excel_sql = "SELECT * FROM PATIENT $search_sql";
-    $excel_result = $conn->query($excel_sql);
-
-    echo "PatientID\tFirstName\tLastName\tDateOfBirth\tGender\tAddress\tPhoneNumber\tRegistrationDate\n";
-    while ($row = $excel_result->fetch_assoc());
-        
-    exit;
-}
-
-
-// Truy vấn phản hồi
-
-
 ?>
 
 
@@ -104,7 +80,7 @@ function exportToExcel() {
       color: var(--text-color);
       text-decoration: none;
       transition: background 0.3s;
-      font-weight: normal;
+    
     }
 
     .sidebar a:hover {
@@ -226,24 +202,26 @@ function exportToExcel() {
 </head>
 <body>
   <div class="sidebar">
-    <h2><img src="healthcare.png" width=40 height=40> Hospital's Name</img></h2>
+    <h3><img src="healthcare.png" width=40 height=40> Hospital's Name</img></h3>
     <a href="homepagenurse.php">Dashboard</a>
     <div class="dropdown">
       <a href="patientinfo.php">Patient Information</a>
-      <div class="dropdown-content">
+      <!--<div class="dropdown-content">
         <a href="patientresult.php">Patient Results</a>
-      </div>
+      </div>-->
     </div>
-    <a href="#">Medical Procedures</a>
+    <a href="medical_procedures.php">Medical Procedures</a>
     <a href="feedback.php">Provide Feedback</a>
-    <a href="#">Settings</a>
+
   </div>
 
   <div class="main">
     <div class="content">
       <h1>View Patient Information</h1>
-      <input type="text" placeholder="Search patient...">
-
+     <form method="GET" action="">
+  <input type="text" name="search" placeholder="Search patient..." value="<?php echo htmlspecialchars($search); ?>">
+  <button type="submit" class="btn">Search</button>
+</form>
       <table>
         <thead>
           <tr>
@@ -254,46 +232,36 @@ function exportToExcel() {
             <th>Gender</th>
             <th>Address</th>
             <th>Phone Number</th>
-			<th> Registration Date </th>
+			<th>Registration Date </th>
           </tr>
         </thead>
-        <tbody>
-         <?php
-        $sql = "SELECT * FROM patient";
-        $result = $conn->query($sql);
-        $no = 1;
-        if ($result->num_rows > 0) {
-          while ($row = $result->fetch_assoc()) {
-            echo "<tr>";
-            echo "<td>" . $no++ . "</td>";
-            echo "<td>" . $row['PatientID'] . "</td>";
-            echo "<td>" . $row['FirstName'] . "</td>";
-            echo "<td>" . $row['LastName'] . "</td>";
-            echo "<td>" . $row['DateOfBirth'] . "</td>";
-            echo "<td>" . $row['Gender'] . "</td>";
-			    echo "<td>" . $row['Address'] . "</td>";
-				    echo "<td>" . $row['PhoneNumber'] . "</td>";
-					    echo "<td>" . $row['RegistrationDate'] . "</td>";
-            echo "<td><a href='patient_detail.php?id=" . $row['PatientID'] . "'>View</a></td>";
-            echo "</tr>";
-          }
-        } else {
-          echo "<tr><td colspan='7'>No patient data found</td></tr>";
-        }
-        ?>
-      </tbody>
+      <tbody>
+<?php
+if ($result->num_rows > 0) {
+  while ($row = $result->fetch_assoc()) {
+    echo "<tr>";
+    echo "<td>" . $row['PatientID'] . "</td>";
+    echo "<td>" . $row['FirstName'] . "</td>";
+    echo "<td>" . $row['LastName'] . "</td>";
+    echo "<td>" . $row['DateOfBirth'] . "</td>";
+    echo "<td>" . $row['Gender'] . "</td>";
+    echo "<td>" . $row['Address'] . "</td>";
+    echo "<td>" . $row['PhoneNumber'] . "</td>";
+    echo "<td>" . $row['RegistrationDate'] . "</td>";
+    echo "<td><a href='patient_detail.php?id=" . $row['PatientID'] . "'></a></td>";
+    echo "</tr>";
+  }
+} else {
+  echo "<tr><td colspan='9'>Không tìm thấy bệnh nhân</td></tr>";
+}
+?>
+</tbody>
+
        
       </table>
 
-      <div class="feedback">
-		  <h3>Feedback</h3>
-		  <?php echo $feedback_html; ?>
-		  <textarea placeholder="Write your feedback here..."></textarea>
-		</div>
-     <div class="button-group">
-  <button class="btn" onclick="saveData()">Lưu</button>
-  <button class="btn" onclick="exportToExcel()">Xuất Excel</button>
-</div>
+      
+
 
     </div>
   </div>
