@@ -9,7 +9,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Giả sử NurseID đang đăng nhập là 1 (bạn nên dùng $_SESSION ở thực tế)
+// Giả
 $nurse_id = 1;
 
 // Truy vấn thông tin y tá
@@ -219,14 +219,14 @@ $schedule_result = $conn->query($schedule_sql);
 	
 	<div class="dropdown">
       <a href="patientinfo.php">Patient Information</a>
-      <div class="dropdown-content">
+    <!--<div class="dropdown-content">
         <a href="patientresult.php">Patient Results</a>
-      </div>
+      </div>-->
     </div>
-    <a href="#">Medical Procedures</a>
+    <a href="medical_procedures.php">Medical Procedures</a>
     <a href="feedback.php">Feedback</a>
     <a href="#">Settings</a>
-    <a href="#">More</a>
+
   </div>
 
   <!-- Main Content -->
@@ -249,31 +249,6 @@ $schedule_result = $conn->query($schedule_sql);
 
       </div>
 
-    <div class="schedule-section">
-  <h3>Patient Appointment Schedule</h3>
-  <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; background:#fff;">
-    <thead style="background:#eee;">
-      <tr>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Patient Name</th>
-        <th>Reason</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php while($row = $schedule_result->fetch_assoc()): ?>
-        <tr>
-          <td><?php echo date('M d, Y', strtotime($row['AppointmentDate'])); ?></td>
-          <td><?php echo date('H:i', strtotime($row['AppointmentTime'])); ?></td>
-          <td><?php echo $row['PatientFirstName'] . ' ' . $row['PatientLastName']; ?></td>
-          <td><?php echo $row['Reason']; ?></td>
-          <td><?php echo $row['Status']; ?></td>
-        </tr>
-      <?php endwhile; ?>
-    </tbody>
-  </table>
-</div>
 
 
     </div>
