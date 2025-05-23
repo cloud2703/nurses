@@ -9,9 +9,24 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Giả
+// 
 $nurse_id = 1;
+// Xử lý lưu chỉnh sửa khi form submit
+if (isset($_POST['save_nurse']) || isset($_POST['save_nurse_info'])) {
+    // Lấy dữ liệu gửi lên
+    $firstName = $conn->real_escape_string($_POST['FirstName']);
+    $lastName = $conn->real_escape_string($_POST['LastName']);
+    $email = $conn->real_escape_string($_POST['Email']);
+    $department = $conn->real_escape_string($_POST['Department']);
 
+    // Câu lệnh cập nhật (không cập nhật HireDate và Location)
+    $update_sql = "UPDATE NURSE SET FirstName=?, LastName=?, Email=?, Department=? WHERE NurseID=?";
+    $stmt = $conn->prepare($update_sql);
+    $stmt->bind_param("ssssi", $firstName, $lastName, $email, $department, $nurse_id);
+    $stmt->execute();
+
+    // Cập nhật lại biến $nurse để hiển thị dữ liệu mới
+}
 // Truy vấn thông tin y tá
 $nurse_sql = "SELECT * FROM NURSE WHERE NurseID = $nurse_id";
 $nurse_result = $conn->query($nurse_sql);
@@ -208,6 +223,53 @@ $schedule_result = $conn->query($schedule_sql);
       pointer-events: none;
       color: #666;
     }
+	
+	/* Style cho form chỉnh sửa */
+    .edit-form {
+      margin-top: 40px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      max-width: 500px;
+      background-color: #fafafa;
+    }
+
+    .edit-form label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .edit-form input[type="text"],
+    .edit-form input[type="email"] {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+    }
+
+    .edit-form button {
+      background-color: var(--primary-color);
+      border: none;
+      padding: 12px 20px;
+      color: white;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .edit-form button:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .edit-form .cancel-btn {
+      background-color: #ccc;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -224,8 +286,8 @@ $schedule_result = $conn->query($schedule_sql);
       </div>-->
     </div>
     <a href="medical_procedures.php">Medical Procedures</a>
-    <a href="feedback.php">Feedback</a>
-    <a href="#">Settings</a>
+    <a href="feedback.php">Provide Feedback</a>
+  
 
   </div>
 
@@ -237,17 +299,43 @@ $schedule_result = $conn->query($schedule_sql);
 
       <div class="top-section">
         <img src="nurse.jpg" alt="Nurse" class="profile-img">
-
-        <div class="nurse-info">
+<div class="nurse-info">
   <h3>Nurse Information</h3>
-  <p><strong>Name:</strong> <?php echo $nurse['FirstName'] . ' ' . $nurse['LastName']; ?></p>
-  <p><strong>Email:</strong> <?php echo $nurse['Email']; ?></p>
-  <p><strong>Department:</strong> <?php echo $nurse['Department']; ?></p>
-  <p><strong>Hire Date:</strong> <?php echo date('F d, Y', strtotime($nurse['HireDate'])); ?></p>
-  <p><strong>Location:</strong> Central General Hospital</p>
+	<!-- Luôn hiển thị thông tin y tá -->
+<p><strong>Name:</strong> <?php echo $nurse['FirstName'] . ' ' . $nurse['LastName']; ?></p>
+<p><strong>Email:</strong> <?php echo $nurse['Email']; ?></p>
+<p><strong>Department:</strong> <?php echo $nurse['Department']; ?></p>
+<p><strong>Hire Date:</strong> <?php echo date('F d, Y', strtotime($nurse['HireDate'])); ?></p>
+<p><strong>Location:</strong> Central General Hospital</p>
+<form method="get">
+  <button type="submit" name="edit" value="1">Edit</button>
+</form>
 </div>
 
       </div>
+	
+	 <!-- Form chỉnh sửa thông tin cá nhân -->
+     <?php if (isset($_GET['edit'])): ?>
+  <div class="edit-form">
+    <h3>Edit Personal Information</h3>
+    <form method="POST" action="">
+      <label for="FirstName">First Name:</label>
+      <input type="text" id="FirstName" name="FirstName" value="<?php echo htmlspecialchars($nurse['FirstName']); ?>" required>
+
+      <label for="LastName">Last Name:</label>
+      <input type="text" id="LastName" name="LastName" value="<?php echo htmlspecialchars($nurse['LastName']); ?>" required>
+
+      <label for="Email">Email:</label>
+      <input type="email" id="Email" name="Email" value="<?php echo htmlspecialchars($nurse['Email']); ?>" required>
+
+      <label for="Department">Department:</label>
+      <input type="text" id="Department" name="Department" value="<?php echo htmlspecialchars($nurse['Department']); ?>" required>
+
+      <button type="submit" name="save_nurse">Save</button>
+      <a href="?" class="cancel-btn" style="margin-left: 10px;">Cancel</a>
+    </form>
+  </div>
+<?php endif; ?>
 
 
 
@@ -271,3 +359,4 @@ $schedule_result = $conn->query($schedule_sql);
 
 </body>
 </html>
+
