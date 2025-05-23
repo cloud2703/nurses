@@ -9,6 +9,21 @@ if ($conn->connect_error) {
     die("Kết nối thất bại: " . $conn->connect_error);
 }
 
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_patient'])) {
+    $id = $_POST['PatientID'];
+    $first = $_POST['FirstName'];
+    $last = $_POST['LastName'];
+    $dob = $_POST['DateOfBirth'];
+    $gender = $_POST['Gender'];
+    $address = $_POST['Address'];
+    $phone = $_POST['PhoneNumber'];
+
+    $sqlUpdate = "UPDATE patient SET FirstName=?, LastName=?, DateOfBirth=?, Gender=?, Address=?, PhoneNumber=? WHERE PatientID=?";
+    $stmt = $conn->prepare($sqlUpdate);
+    $stmt->bind_param("ssssssi", $first, $last, $dob, $gender, $address, $phone, $id);
+    $stmt->execute();
+}
+
 // Xử lý tìm kiếm
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $sql = "SELECT * FROM patient";
@@ -198,6 +213,11 @@ function exportToExcel() {
       cursor: pointer;
       font-size: 14px;
     }
+	.btn-edit {
+	  background-color: var(--primary-color);
+	  color: white;
+	}
+
   </style>
 </head>
 <body>
@@ -233,10 +253,12 @@ function exportToExcel() {
             <th>Address</th>
             <th>Phone Number</th>
 			<th>Registration Date </th>
+			<th>Actions</th> 
           </tr>
         </thead>
       <tbody>
 <?php
+$editingId = isset($_GET['edit']) ? $_GET['edit'] : '';
 if ($result->num_rows > 0) {
   while ($row = $result->fetch_assoc()) {
     echo "<tr>";
@@ -248,7 +270,9 @@ if ($result->num_rows > 0) {
     echo "<td>" . $row['Address'] . "</td>";
     echo "<td>" . $row['PhoneNumber'] . "</td>";
     echo "<td>" . $row['RegistrationDate'] . "</td>";
-    echo "<td><a href='patient_detail.php?id=" . $row['PatientID'] . "'></a></td>";
+    echo "<td>
+            <a href='patientinfo.php?edit=" . $row['PatientID'] . "' class='btn btn-edit'>Edit</a>
+          </td>";
     echo "</tr>";
   }
 } else {
@@ -256,14 +280,57 @@ if ($result->num_rows > 0) {
 }
 ?>
 </tbody>
-
        
       </table>
+	  <?php
+if (!empty($editingId)) {
+    // Lấy dữ liệu bệnh nhân đang cần sửa
+    $stmt = $conn->prepare("SELECT * FROM patient WHERE PatientID = ?");
+    $stmt->bind_param("i", $editingId);
+    $stmt->execute();
+    $editResult = $stmt->get_result();
+    $editPatient = $editResult->fetch_assoc();
 
-      
-
-
+    if ($editPatient) {
+        ?>
+        <div class="content" style="margin-top: 40px;">
+          <h2>Edit Patient Information</h2>
+          <form method="POST" action="patientinfo.php">
+            <input type="hidden" name="PatientID" value="<?= $editPatient['PatientID'] ?>">
+            
+            <label>First Name:</label>
+            <input type="text" name="FirstName" value="<?= $editPatient['FirstName'] ?>" required>
+            
+            <label>Last Name:</label>
+            <input type="text" name="LastName" value="<?= $editPatient['LastName'] ?>" required>
+            
+            <label>Date of Birth:</label>
+            <input type="date" name="DateOfBirth" value="<?= $editPatient['DateOfBirth'] ?>" required>
+            
+            <label>Gender:</label>
+            <select name="Gender" required>
+              <option value="Male" <?= $editPatient['Gender'] == 'Male' ? 'selected' : '' ?>>Male</option>
+              <option value="Female" <?= $editPatient['Gender'] == 'Female' ? 'selected' : '' ?>>Female</option>
+            </select>
+            
+            <label>Address:</label>
+            <input type="text" name="Address" value="<?= $editPatient['Address'] ?>" required>
+            
+            <label>Phone Number:</label>
+            <input type="text" name="PhoneNumber" value="<?= $editPatient['PhoneNumber'] ?>" required>
+            
+            <div class="button-group">
+              <button type="submit" name="update_patient" class="btn btn-edit">Save</button>
+              <a href="patientinfo.php" class="btn">Cancel</a>
+            </div>
+          </form>
+        </div>
+        <?php
+    }
+}
+?>
     </div>
   </div>
 </body>
 </html>
+
